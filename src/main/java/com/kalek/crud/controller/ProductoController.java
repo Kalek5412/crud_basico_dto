@@ -4,6 +4,7 @@ package com.kalek.crud.controller;
 import ch.qos.logback.core.util.StringCollectionUtil;
 import com.kalek.crud.dto.Mensaje;
 import com.kalek.crud.dto.ProductoDTO;
+import com.kalek.crud.exception.RecursoException;
 import com.kalek.crud.models.Producto;
 import com.kalek.crud.service.ProductoService;
 import org.modelmapper.ModelMapper;
@@ -30,16 +31,15 @@ public class ProductoController {
     private ModelMapper modelMapper;
 
     @GetMapping("/listar")
-    public List<ProductoDTO> listaDeProductos(){
-
-        return productoService.listarProductos().stream().map(producto->modelMapper.map(producto,ProductoDTO.class))
-                .collect(Collectors.toList());
+    public List<Producto> listaDeProductos(){
+        return  productoService.listarProductos();
     }
 
     @GetMapping("/listar/{id}")
     public ResponseEntity<Producto> detalleProducto(@PathVariable Long id){
         if(!productoService.existeElId(id)){
-            return new ResponseEntity(new Mensaje("No existe el id"),HttpStatus.NOT_FOUND);
+            //return new ResponseEntity(new Mensaje("No existe el id"),HttpStatus.NOT_FOUND);
+            throw  new RecursoException("no se encontro el producto ");
         }
         Optional<Producto> producto=productoService.buscarPorId(id);
        return new ResponseEntity(producto,HttpStatus.OK);
@@ -55,20 +55,14 @@ public class ProductoController {
     }
 
     @PostMapping
-    public ResponseEntity<?> crearProducto(@RequestBody ProductoDTO productoDTO){
-
-        if(productoDTO.getPrecio() < 0){
+    public ResponseEntity<?> crearProducto(@RequestBody ProductoDTO dto){
+        if(dto.getPrecio() < 0){
             return new ResponseEntity(new Mensaje("El producto debe sr mayor que 0"),HttpStatus.BAD_REQUEST);
         }
-        if(productoService.existeNombre(productoDTO.getNombre())){
+        if(productoService.existeNombre(dto.getNombre())){
             return new ResponseEntity(new Mensaje("Ya existe el producto con ese nombre"),HttpStatus.BAD_REQUEST);
         }
-        //Dto a entity
-        Producto productoReq = modelMapper.map(productoDTO, Producto.class);
-        Producto producto=productoService.guardar(productoReq);
-        //enttity a deto
-        ProductoDTO productoRes=modelMapper.map(producto,ProductoDTO.class);
-        return new ResponseEntity(productoRes,HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(productoService.guardar(dto));
     }
 
     @PutMapping("/editar/{id}")
@@ -83,11 +77,7 @@ public class ProductoController {
                 .get().getId() != id){
             return new ResponseEntity(new Mensaje("Ya existe el producto con ese nombre"),HttpStatus.BAD_REQUEST);
         }
-        Producto producto=productoService.buscarPorId(id).get();
-        producto.setNombre(productoDTO.getNombre());
-        producto.setPrecio(productoDTO.getPrecio());
-        productoService.guardar(producto);
-        return new ResponseEntity(new Mensaje("producto actualizado"),HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.CREATED).body(productoService.modificar(id,productoDTO));
     }
 
     @DeleteMapping("/delete/{id}")

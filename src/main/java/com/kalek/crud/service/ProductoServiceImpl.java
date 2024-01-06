@@ -1,5 +1,6 @@
 package com.kalek.crud.service;
 
+import com.kalek.crud.dto.ProductoDTO;
 import com.kalek.crud.models.Producto;
 import com.kalek.crud.repository.ProductoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,18 @@ public class ProductoServiceImpl implements ProductoService{
     }
 
     @Override
-    public Producto guardar(Producto producto) {
+    public Producto guardar(ProductoDTO objDTO) {
+        Producto producto =new Producto();
+        producto.setNombre(objDTO.getNombre());
+        producto.setPrecio(objDTO.getPrecio());;
+        return productoRepository.save(producto);
+    }
+
+    @Override
+    public Producto modificar(Long id, ProductoDTO objDTO) {
+        Producto producto = productoRepository.findById(id).get();
+        producto.setNombre(objDTO.getNombre());
+        producto.setPrecio(objDTO.getPrecio());;
         return productoRepository.save(producto);
     }
 
